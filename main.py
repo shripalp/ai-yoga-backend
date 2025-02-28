@@ -27,6 +27,9 @@ class UserPreferences(BaseModel):
     
 class DietPreferences(BaseModel):
     dietType: str
+    
+class ChatRequest(BaseModel):
+    question: str
 
 @app.post("/generate_yoga_routine/")
 def generate_yoga_routine(user: UserPreferences):
@@ -49,3 +52,14 @@ def generate_diet_plan(diet: DietPreferences):
     )
     
     return {"dietPlan": response.choices[0].message.content}
+
+@app.post("/chatbot")
+def chatbot(request: ChatRequest):
+    prompt = f"Answer the following yoga or diet-related question: {request.question}"
+
+    response = client.chat.completions.create(
+        model="gpt-4o-mini",
+        messages=[{"role": "user", "content": prompt}]
+    )
+
+    return {"response": response.choices[0].message.content}
