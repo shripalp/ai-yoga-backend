@@ -75,7 +75,7 @@ diet_prompt = PromptTemplate(
 )
 
 @app.post("/generate-yoga-routine")
-def generate_yoga_routine(yoga_request: YogaRequest):
+def generate_yoga_routine(yoga_request: UserPreferences):
     formatted_prompt = yoga_prompt.format(
         fitnessLevel=yoga_request.fitnessLevel,
         yogaGoal=yoga_request.yogaGoal
@@ -86,7 +86,7 @@ def generate_yoga_routine(yoga_request: YogaRequest):
     return {"routine": response}
 
 @app.post("/generate-diet-plan")
-def generate_diet_plan(diet_request: DietRequest):
+def generate_diet_plan(diet_request: DietPreferences):
     formatted_prompt = diet_prompt.format(dietType=diet_request.dietType)
 
     response = llm.invoke(formatted_prompt)
