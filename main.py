@@ -26,14 +26,14 @@ app.add_middleware(
 class UserPreferences(BaseModel):
     fitnessLevel: str
     yogaGoal: str
-    
+
 class DietPreferences(BaseModel):
     dietType: str
-    
+
 class ChatRequest(BaseModel):
     question: str
-    
-llm = ChatOpenAI(model_name="gpt-4", temperature=0.7)
+
+llm = ChatOpenAI(model_name="gpt-4o-mini", temperature=0.7)
 
 # Template for Yoga Routine
 yoga_prompt = PromptTemplate(
