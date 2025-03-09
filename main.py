@@ -36,7 +36,7 @@ class ChatRequest(BaseModel):
 class TherapyRequest(BaseModel):
     problem_statement: str  # Accepts user's problem statement
 
-llm = ChatOpenAI(model_name="gpt-4", temperature=0.7)
+llm = ChatOpenAI(model_name="gpt-4o-mini", temperature=0.7)
 
 # Template for Yoga Routine
 yoga_prompt = PromptTemplate(
