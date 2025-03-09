@@ -129,9 +129,36 @@ def chatbot(request: ChatRequest):
 
 @app.post("/generate_yoga_therapy_plan")
 def generate_yoga_therapy_plan(request: TherapyRequest):
-    formatted_prompt = therapy_prompt.format(problem_statement=request.problem_statement)
+    system_prompt = """
+    You are an expert Yoga Therapist with deep knowledge of holistic healing, yoga postures, breathing techniques, 
+    and wellness. Your goal is to provide structured, personalized yoga therapy plans that are in line with Iyengar Yoga Tradition and are **clear, effective, and easy to follow**.
+    
+    Guidelines:
+    - Use **simple, understandable language** (avoid medical jargon).
+    - Structure the plan clearly with **step-by-step instructions**.
+    - Always include **Yoga Poses, Breathwork Techniques, Relaxation Practices, and Lifestyle Suggestions**.
+    - Make the response **motivating and encouraging**.
+    """
 
+    user_prompt = f"""
+    Generate a **personalized Yoga Therapy Plan** for the following problem:
 
-    response = llm.invoke(formatted_prompt)
+    **Problem:** {request.problem_statement}
+
+    The response should include:
+    1. **Understanding the Problem**: Explain how yoga can help.
+    2. **Recommended Yoga Poses**: List specific poses with benefits.
+    3. **Breathing Techniques**: Explain breathwork techniques for healing.
+    4. **Relaxation Practices**: Include meditation or mindfulness practices.
+    5. **Lifestyle Suggestions**: Provide additional wellness tips.
+
+    **Format the response in a structured, easy-to-follow way.**
+    """
+
+    # Combine system and user prompts
+    full_prompt = f"{system_prompt}\n\n{user_prompt}"
+
+    response = llm.invoke(full_prompt)
+    
     return {"therapyPlan": response}
 
