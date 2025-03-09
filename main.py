@@ -33,7 +33,10 @@ class DietPreferences(BaseModel):
 class ChatRequest(BaseModel):
     question: str
 
-llm = ChatOpenAI(model_name="gpt-4o-mini", temperature=0.7)
+class TherapyRequest(BaseModel):
+    problem_statement: str  # Accepts user's problem statement
+
+llm = ChatOpenAI(model_name="gpt-4", temperature=0.7)
 
 # Template for Yoga Routine
 yoga_prompt = PromptTemplate(
@@ -41,7 +44,7 @@ yoga_prompt = PromptTemplate(
     template="""
     Generate a structured yoga routine for a {fitnessLevel} level person focusing on {yogaGoal}. 
     Format the response as follows:
-    
+
     **Yoga Routine for {yogaGoal}**
     - **Warm-up (5 minutes):**
       - [List warm-up poses]
@@ -53,6 +56,7 @@ yoga_prompt = PromptTemplate(
     Ensure it's clear and concise.
     """
 )
+
 # Template for Diet Plan
 diet_prompt = PromptTemplate(
     input_variables=["dietType"],
@@ -71,6 +75,25 @@ diet_prompt = PromptTemplate(
       - [Provide one healthy lifestyle tip]
 
     Ensure it's easy to read.
+    """
+)
+
+# Template for Yoga Therapy Plan
+therapy_prompt = PromptTemplate(
+    input_variables=["problem_statement"],
+    template="""
+    Generate a personalized Yoga Therapy Plan for the following problem:
+
+    **Problem:** {problem_statement}
+
+    The response should include:
+    1. **Understanding the Problem**: Explain how yoga can help.
+    2. **Recommended Yoga Poses**: List specific poses with benefits.
+    3. **Breathing Techniques**: Explain breathwork techniques for healing.
+    4. **Relaxation Practices**: Include meditation or mindfulness practices.
+    5. **Lifestyle Suggestions**: Provide additional wellness tips.
+
+    Ensure the response is structured, easy to follow, and holistic.
     """
 )
 
@@ -103,3 +126,12 @@ def chatbot(request: ChatRequest):
     )
 
     return {"response": response.choices[0].message.content}
+
+@app.post("/generate_yoga_therapy_plan")
+def generate_yoga_therapy_plan(request: TherapyRequest):
+    formatted_prompt = therapy_prompt.format(problem_statement=request.problem_statement)
+
+
+    response = llm.invoke(formatted_prompt)
+    return {"therapyPlan": response}
+
