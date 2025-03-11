@@ -97,7 +97,7 @@ therapy_prompt = PromptTemplate(
     """
 )
 
-@app.post("/generate-yoga-routine")
+@app.post("/generate_yoga_routine")
 def generate_yoga_routine(yoga_request: UserPreferences):
     formatted_prompt = yoga_prompt.format(
         fitnessLevel=yoga_request.fitnessLevel,
@@ -108,7 +108,7 @@ def generate_yoga_routine(yoga_request: UserPreferences):
 
     return {"routine": response}
 
-@app.post("/generate-diet-plan")
+@app.post("/generate_diet_plan")
 def generate_diet_plan(diet_request: DietPreferences):
     formatted_prompt = diet_prompt.format(dietType=diet_request.dietType)
 
