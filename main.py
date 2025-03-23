@@ -1,15 +1,22 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Request, Header, Response
+from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from openai import OpenAI
 from langchain.chat_models import ChatOpenAI
 from langchain.prompts import PromptTemplate
-import os
+import os, stripe
 from dotenv import load_dotenv
+from datetime import datetime
+import smtplib
+from email.mime.text import MIMEText
+
 
 # Load API key from .env file
 load_dotenv()
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+stripe.api_key = os.getenv("STRIPE_SECRET_KEY")
+STRIPE_WEBHOOK_SECRET = os.getenv("STRIPE_WEBHOOK_SECRET")
 
 app = FastAPI()
 client = OpenAI(api_key=OPENAI_API_KEY)
@@ -22,6 +29,10 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+class CheckoutSessionRequest(BaseModel):
+    price_id: str
+
 
 class UserPreferences(BaseModel):
     fitnessLevel: str
@@ -96,6 +107,65 @@ therapy_prompt = PromptTemplate(
     Ensure the response is structured, easy to follow, and holistic.
     """
 )
+
+@app.post("/webhook")
+async def stripe_webhook(request: Request, stripe_signature: str = Header(None)):
+    payload = await request.body()
+    try:
+        event = stripe.Webhook.construct_event(
+            payload, stripe_signature, STRIPE_WEBHOOK_SECRET
+        )
+    except stripe.error.SignatureVerificationError:
+        return Response(status_code=400)
+
+    if event["type"] == "invoice.paid":
+        session = event["data"]["object"]
+        email = session["customer_email"]
+
+        # Get current month/year for expiration
+        now = datetime.now()
+        expire_date = datetime(now.year, now.month + 1, 1)
+
+        # Compose your Teams link with expiration logic (e.g., stored per month)
+        class_link = "https://teams.live.com/meet/9364230714872?p=1MOZamDde4epaQ81Tv"
+
+        send_yoga_email(email, class_link, expire_date)
+
+    return Response(status_code=200)
+
+def send_yoga_email(to, link, expires_on):
+    msg = MIMEText(f"""
+    ✅ Welcome to your Monthly Yoga Pass!
+
+    📅 This link is valid until {expires_on.strftime('%B %d, %Y')}:
+    👉 {link}
+
+    See you on the mat 🙏
+    """)
+    msg["Subject"] = "Your Yoga Class Link (Monthly Access)"
+    msg["From"] = os.getenv("EMAIL_USER")
+    msg["To"] = to
+
+    with smtplib.SMTP_SSL("smtp.gmail.com", 465) as server:
+        server.login(os.getenv("EMAIL_USER"), os.getenv("EMAIL_PASS"))
+        server.send_message(msg)
+
+@app.post("/create-checkout-session")
+async def create_checkout_session(data: CheckoutSessionRequest):
+    try:
+        session = stripe.checkout.Session.create(
+            success_url="https://thirdlimbyoga.com/success",
+            cancel_url="https://thirdlimbyoga.com/cancel",
+            payment_method_types=["card"],
+            mode="subscription",
+            line_items=[{
+                "price": data.price_id,
+                "quantity": 1,
+            }],
+        )
+        return {"url": session.url}
+    except Exception as e:
+        return JSONResponse(status_code=400, content={"error": str(e)})
 
 @app.post("/generate_yoga_routine")
 def generate_yoga_routine(yoga_request: UserPreferences):
