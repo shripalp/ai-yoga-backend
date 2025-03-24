@@ -150,21 +150,25 @@ def send_yoga_email(to, link, expires_on):
         server.login(os.getenv("EMAIL_USER"), os.getenv("EMAIL_PASS"))
         server.send_message(msg)
 
+
 @app.get("/create-checkout-session")
 async def create_checkout_session(price_id: str = Query(...)):
-    try:
-        session = stripe.checkout.Session.create(
-            success_url="https://thirdlimbyoga.com/success",
-            cancel_url="https://thirdlimbyoga.com/cancel",
-            payment_method_types=["card"],
-            mode="subscription",
-            line_items=[{
-                "price": price_id,
-                "quantity": 1,
-            }],
-        )
-        return {"url": session.url}
-    except Exception as e:
+  #BASE_URL = os.getenv("FRONTEND_BASE_URL", "http://localhost:5173")
+
+  try:
+      session = stripe.checkout.Session.create(
+          success_url="https://thirdlimbyoga.com/success",
+          cancel_url="https://thirdlimbyoga.com/cancel",
+          payment_method_types=["card"],
+          mode="subscription",
+          line_items=[{
+              "price": price_id,
+              "quantity": 1,
+          }],
+      )
+      return {"url": session.url}
+  except Exception as e:
+        print("❌ Stripe error:", e)  # <-- log actual error
         return JSONResponse(status_code=400, content={"error": str(e)})
 
 @app.post("/generate_yoga_routine")
