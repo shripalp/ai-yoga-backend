@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Request, Header, Response
+from fastapi import FastAPI, Request, Header, Response, Query
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
@@ -12,23 +12,23 @@ import smtplib
 from email.mime.text import MIMEText
 
 
+app = FastAPI()
+
+# Enable CORS
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["https://www.thirdlimbyoga.com", "https://thirdlimbyoga.com", "http://127.0.0.1:5173" ],  # Allows requests from any frontend
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 # Load API key from .env file
 load_dotenv()
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 stripe.api_key = os.getenv("STRIPE_SECRET_KEY")
 STRIPE_WEBHOOK_SECRET = os.getenv("STRIPE_WEBHOOK_SECRET")
-
-app = FastAPI()
 client = OpenAI(api_key=OPENAI_API_KEY)
 
-# Enable CORS
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],  # Allows requests from any frontend
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
 
 class CheckoutSessionRequest(BaseModel):
     price_id: str
@@ -150,8 +150,8 @@ def send_yoga_email(to, link, expires_on):
         server.login(os.getenv("EMAIL_USER"), os.getenv("EMAIL_PASS"))
         server.send_message(msg)
 
-@app.post("/create-checkout-session")
-async def create_checkout_session(data: CheckoutSessionRequest):
+@app.get("/create-checkout-session")
+async def create_checkout_session(price_id: str = Query(...)):
     try:
         session = stripe.checkout.Session.create(
             success_url="https://thirdlimbyoga.com/success",
@@ -159,7 +159,7 @@ async def create_checkout_session(data: CheckoutSessionRequest):
             payment_method_types=["card"],
             mode="subscription",
             line_items=[{
-                "price": data.price_id,
+                "price": price_id,
                 "quantity": 1,
             }],
         )
