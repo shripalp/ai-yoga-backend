@@ -157,8 +157,8 @@ async def create_checkout_session(price_id: str = Query(...)):
 
   try:
       session = stripe.checkout.Session.create(
-          success_url="https://thirdlimbyoga.com/success",
-          cancel_url="https://thirdlimbyoga.com/cancel",
+          success_url="https://www.thirdlimbyoga.com/success",
+          cancel_url="https://www.thirdlimbyoga.com/cancel",
           payment_method_types=["card"],
           mode="subscription",
           line_items=[{
