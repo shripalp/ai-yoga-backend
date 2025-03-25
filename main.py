@@ -118,20 +118,32 @@ async def stripe_webhook(request: Request, stripe_signature: str = Header(None))
     except stripe.error.SignatureVerificationError:
         return Response(status_code=400)
 
+    # ✅ Send class link for paid subscriptions
     if event["type"] == "invoice.paid":
         session = event["data"]["object"]
         email = session["customer_email"]
 
-        # Get current month/year for expiration
         now = datetime.now()
         expire_date = datetime(now.year, now.month + 1, 1)
 
-        # Compose your Teams link with expiration logic (e.g., stored per month)
         class_link = "https://teams.live.com/meet/9364230714872?p=1MOZamDde4epaQ81Tv"
-
         send_yoga_email(email, class_link, expire_date)
 
+    # ✅ Send class link for free plans
+    elif event["type"] == "checkout.session.completed":
+        session = event["data"]["object"]
+        amount_total = session.get("amount_total", 1)  # in cents
+
+        if amount_total == 0:
+            email = session["customer_details"]["email"]
+            now = datetime.now()
+            expire_date = datetime(now.year, now.month + 1, 1)
+
+            free_link = "https://teams.live.com/meet/9364230714872?p=FreeYogaSession"
+            send_yoga_email(email, free_link, expire_date)
+
     return Response(status_code=200)
+
 
 def send_yoga_email(to, link, expires_on):
     msg = MIMEText(f"""
@@ -146,9 +158,13 @@ def send_yoga_email(to, link, expires_on):
     msg["From"] = os.getenv("EMAIL_USER")
     msg["To"] = to
 
-    with smtplib.SMTP_SSL("smtp.gmail.com", 465) as server:
-        server.login(os.getenv("EMAIL_USER"), os.getenv("EMAIL_PASS"))
-        server.send_message(msg)
+    try:
+        with smtplib.SMTP_SSL("smtp.gmail.com", 465) as server:
+            server.login(os.getenv("EMAIL_USER"), os.getenv("EMAIL_PASS"))
+            server.send_message(msg)
+            print(f"✅ Email sent to {to}")
+    except Exception as e:
+        print(f"❌ Failed to send email to {to}: {e}")
 
 
 @app.get("/create-checkout-session")
