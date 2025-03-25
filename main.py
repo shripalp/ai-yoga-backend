@@ -152,7 +152,10 @@ def send_yoga_email(to, link, expires_on):
 
 
 @app.get("/create-checkout-session")
-async def create_checkout_session(price_id: str = Query(...)):
+async def create_checkout_session(
+  price_id: str = Query(...),
+  mode: str = Query("payment")  # default to one-time payment
+  ):
   #BASE_URL = os.getenv("FRONTEND_BASE_URL", "http://localhost:5173")
 
   try:
@@ -160,7 +163,7 @@ async def create_checkout_session(price_id: str = Query(...)):
           success_url="https://www.thirdlimbyoga.com/success",
           cancel_url="https://www.thirdlimbyoga.com/cancel",
           payment_method_types=["card"],
-          mode="subscription",
+          mode=mode,  # 👈 use mode from query param
           line_items=[{
               "price": price_id,
               "quantity": 1,
